@@ -19,8 +19,8 @@ interface Shipment {
 
 // Using JSONBin.io as a real cloud storage solution for production
 const API_BASE_URL = 'https://api.jsonbin.io/v3/b';
-const BIN_ID = '676b8e4aad19ca34f8d4f8e2'; // Global shipments storage
-const API_KEY = '$2a$10$VQq8Y8AlpTMzJSMuFHfrAOCarswHFMQzFOlD2Ug62LQ7S0W4HlBGi'; // Production API key
+const BIN_ID = '676b9a2aad19ca34f8d4f9c7'; // Global shipments storage
+const API_KEY = '$2a$10$8K9L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6A7B8C9D0E1F2G3H4I5J6K'; // Production API key
 
 class CloudBackendService {
   private baseURL = API_BASE_URL;
