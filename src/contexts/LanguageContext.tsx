@@ -1,16 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
-export type LanguageType =
-  | "en"
-  | "fr"
-  | "es"
-  | "pt"
-  | "da"
-  | "nl"
-  | "ru"
-  | "ar"
-  | "zh"
-  | "ko";
+export type LanguageType = "en" | "fr" | "es";
 
 interface LanguageContextType {
   language: LanguageType;
@@ -42,9 +32,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
       const storedPreference = window.localStorage.getItem("language");
       if (
         storedPreference &&
-        ["en", "fr", "es", "pt", "da", "nl", "ru", "ar", "zh", "ko"].includes(
-          storedPreference
-        )
+        ["en", "fr", "es"].includes(storedPreference)
       ) {
         return storedPreference as LanguageType;
       }
@@ -52,11 +40,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
 
     // Use browser language if available
     const browserLang = navigator.language.split("-")[0];
-    if (
-      ["en", "fr", "es", "pt", "da", "nl", "ru", "ar", "zh", "ko"].includes(
-        browserLang
-      )
-    ) {
+    if (["en", "fr", "es"].includes(browserLang)) {
       return browserLang as LanguageType;
     }
 
@@ -68,18 +52,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
 
   const setLanguage = (lang: string) => {
     // Only allow supported languages
-    const supported: LanguageType[] = [
-      "en",
-      "fr",
-      "es",
-      "pt",
-      "da",
-      "nl",
-      "ru",
-      "ar",
-      "zh",
-      "ko",
-    ];
+    const supported: LanguageType[] = ["en", "fr", "es"];
     const safeLang = supported.includes(lang as LanguageType)
       ? (lang as LanguageType)
       : "en";
