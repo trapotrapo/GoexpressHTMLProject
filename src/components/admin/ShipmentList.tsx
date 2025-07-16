@@ -228,14 +228,14 @@ const ShipmentList: React.FC = () => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
       {/* Cloud Status Indicator */}
-      <div className="bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-800 rounded-md p-3 mb-6 flex items-center">
-        <Cloud className="w-5 h-5 text-green-600 mr-2" />
+      <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-md p-3 mb-6 flex items-center">
+        <Cloud className="w-5 h-5 text-blue-600 mr-2" />
         <div className="flex-1">
-          <p className="text-sm font-medium text-green-800 dark:text-green-400">
-            {t.cloudBackendActive}
+          <p className="text-sm font-medium text-blue-800 dark:text-blue-400">
+            🌍 Global Cloud Backend Active
           </p>
-          <p className="text-xs text-green-700 dark:text-green-300">
-            All shipments are automatically synced across all devices and can be tracked by customers worldwide.
+          <p className="text-xs text-blue-700 dark:text-blue-300">
+            All shipments are stored in the cloud and can be tracked by anyone, anywhere in the world. Admin and customer shipments are globally accessible.
           </p>
         </div>
       </div>

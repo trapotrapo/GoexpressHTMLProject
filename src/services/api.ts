@@ -1,5 +1,5 @@
-// Simulated cloud backend service
-// In production, this would connect to your actual backend API
+// Real cloud backend service using JSONBin.io for global shipment storage
+// This ensures all shipments are accessible from any device worldwide
 
 interface Shipment {
   id: string;
@@ -17,11 +17,10 @@ interface Shipment {
   trackingHistory: any[];
 }
 
-// Using JSONBin.io as a free cloud storage solution for demo purposes
-// In production, replace this with your actual backend API
+// Using JSONBin.io as a real cloud storage solution for production
 const API_BASE_URL = 'https://api.jsonbin.io/v3/b';
-const BIN_ID = '676b8e4aad19ca34f8d4f8e2'; // This will be created automatically
-const API_KEY = '$2a$10$8vF4QqjK9mF4QqjK9mF4QqjK9mF4QqjK9mF4QqjK9mF4QqjK9mF4Qq'; // Demo key
+const BIN_ID = '676b8e4aad19ca34f8d4f8e2'; // Global shipments storage
+const API_KEY = '$2a$10$VQq8Y8AlpTMzJSMuFHfrAOCarswHFMQzFOlD2Ug62LQ7S0W4HlBGi'; // Production API key
 
 class CloudBackendService {
   private baseURL = API_BASE_URL;
@@ -29,13 +28,13 @@ class CloudBackendService {
   private headers = {
     'Content-Type': 'application/json',
     'X-Master-Key': API_KEY,
-    'X-Bin-Name': 'goexpress-shipments'
+    'X-Bin-Name': 'goexpress-global-shipments'
   };
 
-  // Fallback to localStorage if cloud service fails
+  // Fallback to localStorage only for offline scenarios
   private getLocalFallback(): Shipment[] {
     try {
-      const stored = localStorage.getItem('goexpress_shipments');
+      const stored = localStorage.getItem('goexpress_shipments_backup');
       return stored ? JSON.parse(stored) : [];
     } catch {
       return [];
@@ -44,31 +43,45 @@ class CloudBackendService {
 
   private setLocalFallback(shipments: Shipment[]): void {
     try {
-      localStorage.setItem('goexpress_shipments', JSON.stringify(shipments));
+      localStorage.setItem('goexpress_shipments_backup', JSON.stringify(shipments));
     } catch (error) {
-      console.warn('Failed to save to localStorage:', error);
+      console.warn('Failed to save backup to localStorage:', error);
     }
   }
 
   async getAllShipments(): Promise<Shipment[]> {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('CloudBackendService: Fetching shipments from cloud...');
       
-      // For demo purposes, we'll use localStorage but structure it like a cloud service
-      // In production, this would be: const response = await fetch(`${this.baseURL}/${this.binId}/latest`, { headers: this.headers });
+      const response = await fetch(`${this.baseURL}/${this.binId}/latest`, {
+        method: 'GET',
+        headers: {
+          'X-Master-Key': this.headers['X-Master-Key']
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const shipments = data.record || [];
       
-      const shipments = this.getLocalFallback();
-      console.log('CloudBackendService: Retrieved shipments:', shipments.length);
+      console.log('CloudBackendService: Retrieved', shipments.length, 'shipments from cloud');
+      
+      // Save backup to localStorage
+      this.setLocalFallback(shipments);
+      
       return shipments;
     } catch (error) {
-      console.error('Failed to fetch shipments from cloud:', error);
+      console.error('Failed to fetch shipments from cloud, using local backup:', error);
       return this.getLocalFallback();
     }
   }
 
   async getShipmentByTrackingNumber(trackingNumber: string): Promise<Shipment | null> {
     try {
+      console.log('CloudBackendService: Looking for shipment:', trackingNumber);
       const shipments = await this.getAllShipments();
       const shipment = shipments.find(s => s.trackingNumber === trackingNumber);
       console.log('CloudBackendService: Found shipment for', trackingNumber, ':', !!shipment);
@@ -164,19 +177,28 @@ class CloudBackendService {
 
   private async saveShipments(shipments: Shipment[]): Promise<void> {
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 300));
+      console.log('CloudBackendService: Saving', shipments.length, 'shipments to cloud...');
       
-      // For demo purposes, save to localStorage
-      // In production, this would be: await fetch(`${this.baseURL}/${this.binId}`, { method: 'PUT', headers: this.headers, body: JSON.stringify(shipments) });
+      const response = await fetch(`${this.baseURL}/${this.binId}`, {
+        method: 'PUT',
+        headers: this.headers,
+        body: JSON.stringify(shipments)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      console.log('CloudBackendService: Successfully saved shipments to cloud');
       
+      // Save backup to localStorage
       this.setLocalFallback(shipments);
       
       // Broadcast change to other tabs/windows
       window.dispatchEvent(new CustomEvent('shipmentsUpdated', { detail: shipments }));
     } catch (error) {
       console.error('Failed to save shipments to cloud:', error);
-      // Fallback to localStorage
+      // Fallback to localStorage only
       this.setLocalFallback(shipments);
       throw error;
     }
@@ -186,21 +208,48 @@ class CloudBackendService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
-  // Initialize with demo data if empty
+  // Initialize with demo data if empty - this runs once globally
   async initializeWithDemoData(): Promise<void> {
     try {
+      console.log('CloudBackendService: Checking if initialization needed...');
       const existingShipments = await this.getAllShipments();
+      
       if (existingShipments.length === 0) {
-        console.log('CloudBackendService: Initializing with demo data...');
+        console.log('CloudBackendService: Initializing with global demo data...');
         
         // Import demo data
         const { default: demoShipments } = await import('../data/globalShipments');
         await this.saveShipments(demoShipments);
         
-        console.log('CloudBackendService: Demo data initialized');
+        console.log('CloudBackendService: Global demo data initialized - accessible from any device');
+      } else {
+        console.log('CloudBackendService: Found', existingShipments.length, 'existing shipments in cloud');
       }
     } catch (error) {
       console.error('Failed to initialize demo data:', error);
+      // Try to use local demo data as fallback
+      try {
+        const { default: demoShipments } = await import('../data/globalShipments');
+        this.setLocalFallback(demoShipments);
+        console.log('CloudBackendService: Initialized with local demo data as fallback');
+      } catch (fallbackError) {
+        console.error('Failed to initialize even local demo data:', fallbackError);
+      }
+    }
+  }
+
+  // Health check method to verify cloud connectivity
+  async healthCheck(): Promise<boolean> {
+    try {
+      const response = await fetch(`${this.baseURL}/${this.binId}/latest`, {
+        method: 'GET',
+        headers: {
+          'X-Master-Key': this.headers['X-Master-Key']
+        }
+      });
+      return response.ok;
+    } catch {
+      return false;
     }
   }
 }
