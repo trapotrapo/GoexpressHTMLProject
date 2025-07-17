@@ -34,26 +34,26 @@ export const ShipmentProvider: React.FC<ShipmentProviderProps> = ({ children }) 
     // Initialize the global cloud backend with demo data if needed
     const initializeGlobalBackend = async () => {
       try {
-        console.log('Initializing global cloud backend...');
+        console.log('Initializing real cloud backend...');
         await cloudBackend.initializeWithDemoData();
         
         // Verify cloud connectivity
         const isHealthy = await cloudBackend.healthCheck();
         if (isHealthy) {
-          console.log('✅ Global cloud backend is healthy and ready');
+          console.log('✅ Real cloud backend is healthy and ready');
         } else {
           console.warn('⚠️ Cloud backend connectivity issues detected');
         }
       } catch (error) {
-        console.error('Failed to initialize global backend:', error);
+        console.error('Failed to initialize cloud backend:', error);
       }
     };
     
     initializeGlobalBackend();
     
-    // Listen for shipment updates from other tabs/windows
+    // Listen for real-time shipment updates
     const handleShipmentsUpdated = (event: CustomEvent) => {
-      console.log('Global shipments updated - refreshing data');
+      console.log('Cloud shipments updated - refreshing data');
       // You could trigger a refresh here if needed
     };
     

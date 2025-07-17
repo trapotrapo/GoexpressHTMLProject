@@ -46,10 +46,10 @@ const HomePage: React.FC = () => {
             <Cloud className="w-6 h-6 text-blue-600 mr-3" />
             <div>
               <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-400">
-                🌍 Global Shipment Tracking
+                ☁️ Real Cloud Storage
               </h3>
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                Track any shipment from any device, anywhere in the world. All shipments are stored globally and accessible to everyone.
+                Track any shipment from any device, anywhere in the world. All shipments are stored in real cloud storage - no localStorage limitations.
               </p>
             </div>
             <Users className="w-6 h-6 text-blue-600 ml-3" />

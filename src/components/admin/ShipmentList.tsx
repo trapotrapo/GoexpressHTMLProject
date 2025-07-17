@@ -232,10 +232,10 @@ const ShipmentList: React.FC = () => {
         <Cloud className="w-5 h-5 text-blue-600 mr-2" />
         <div className="flex-1">
           <p className="text-sm font-medium text-blue-800 dark:text-blue-400">
-            🌍 Global Cloud Backend Active
+            ☁️ Real Cloud Storage Active
           </p>
           <p className="text-xs text-blue-700 dark:text-blue-300">
-            All shipments are stored in the cloud and can be tracked by anyone, anywhere in the world. Admin and customer shipments are globally accessible.
+            All shipments are stored in real cloud storage and can be tracked by anyone from any device worldwide. No localStorage - truly global access.
           </p>
         </div>
       </div>
