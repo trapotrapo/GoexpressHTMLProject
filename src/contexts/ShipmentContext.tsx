@@ -31,29 +31,29 @@ export const ShipmentProvider: React.FC<ShipmentProviderProps> = ({ children }) 
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
-    // Initialize the global cloud backend with demo data if needed
-    const initializeGlobalBackend = async () => {
+    // Initialize MongoDB Atlas backend with demo data if needed
+    const initializeMongoDBBackend = async () => {
       try {
-        console.log('Initializing real cloud backend...');
+        console.log('🚀 Initializing MongoDB Atlas backend...');
         await cloudBackend.initializeWithDemoData();
         
-        // Verify cloud connectivity
+        // Verify MongoDB connectivity
         const isHealthy = await cloudBackend.healthCheck();
         if (isHealthy) {
-          console.log('✅ Real cloud backend is healthy and ready');
+          console.log('✅ MongoDB Atlas backend is healthy and ready');
         } else {
-          console.warn('⚠️ Cloud backend connectivity issues detected');
+          console.warn('⚠️ MongoDB Atlas connectivity issues detected');
         }
       } catch (error) {
-        console.error('Failed to initialize cloud backend:', error);
+        console.error('❌ Failed to initialize MongoDB Atlas backend:', error);
       }
     };
     
-    initializeGlobalBackend();
+    initializeMongoDBBackend();
     
-    // Listen for real-time shipment updates
+    // Listen for real-time shipment updates from MongoDB
     const handleShipmentsUpdated = (event: CustomEvent) => {
-      console.log('Cloud shipments updated - refreshing data');
+      console.log('📡 MongoDB shipments updated - refreshing data');
       // You could trigger a refresh here if needed
     };
     
@@ -61,6 +61,8 @@ export const ShipmentProvider: React.FC<ShipmentProviderProps> = ({ children }) 
     
     return () => {
       window.removeEventListener('shipmentsUpdated', handleShipmentsUpdated as EventListener);
+      // Cleanup MongoDB connection on unmount
+      cloudBackend.disconnect().catch(console.error);
     };
   }, []);
   

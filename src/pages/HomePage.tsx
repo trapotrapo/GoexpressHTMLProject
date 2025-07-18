@@ -40,19 +40,19 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* Cloud Backend Notice */}
-      <section className="py-8 bg-blue-50 dark:bg-blue-900/10 border-b border-blue-200 dark:border-blue-800">
+      <section className="py-8 bg-green-50 dark:bg-green-900/10 border-b border-green-200 dark:border-green-800">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-center text-center">
-            <Cloud className="w-6 h-6 text-blue-600 mr-3" />
+            <Cloud className="w-6 h-6 text-green-600 mr-3" />
             <div>
-              <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-400">
-                ☁️ Real Cloud Storage
+              <h3 className="text-lg font-semibold text-green-800 dark:text-green-400">
+                🍃 MongoDB Atlas Database
               </h3>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                Track any shipment from any device, anywhere in the world. All shipments are stored in real cloud storage - no localStorage limitations.
+              <p className="text-sm text-green-700 dark:text-green-300">
+                Track any shipment from any device, anywhere in the world. All shipments are stored in MongoDB Atlas cloud database - truly global access!
               </p>
             </div>
-            <Users className="w-6 h-6 text-blue-600 ml-3" />
+            <Users className="w-6 h-6 text-green-600 ml-3" />
           </div>
         </div>
       </section>

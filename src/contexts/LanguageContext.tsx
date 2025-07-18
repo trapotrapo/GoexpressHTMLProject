@@ -28,16 +28,6 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
 }) => {
   // Get initial language preference from localStorage or browser language
   const getInitialLanguage = (): LanguageType => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      const storedPreference = window.localStorage.getItem("language");
-      if (
-        storedPreference &&
-        ["en", "fr", "es"].includes(storedPreference)
-      ) {
-        return storedPreference as LanguageType;
-      }
-    }
-
     // Use browser language if available
     const browserLang = navigator.language.split("-")[0];
     if (["en", "fr", "es"].includes(browserLang)) {
@@ -57,7 +47,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({
       ? (lang as LanguageType)
       : "en";
     setLanguageState(safeLang);
-    localStorage.setItem("language", safeLang);
+    // Note: Language preference is session-based only
   };
 
   const value = { language, setLanguage };

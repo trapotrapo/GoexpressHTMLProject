@@ -42,17 +42,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check if user is already logged in on mount
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-        setIsAuthenticated(true);
-      } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('user');
-      }
-    }
+    // Note: User authentication is now session-based only
+    // No localStorage persistence to maintain security
+    console.log('🔐 Authentication system initialized (session-based)');
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
@@ -71,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(mockUser);
       setIsAuthenticated(true);
-      localStorage.setItem('user', JSON.stringify(mockUser));
+      // Note: No localStorage - session-based authentication only
       
       return true;
     }
@@ -82,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    localStorage.removeItem('user');
+    // Note: No localStorage cleanup needed
   };
 
   const updateUserProfile = async (data: UpdateUserProfile): Promise<void> => {
@@ -99,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
     
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    // Note: User data updated in session only
   };
 
   const value = {

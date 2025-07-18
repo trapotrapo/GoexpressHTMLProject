@@ -1,7 +1,10 @@
-// Real cloud backend service using a simple HTTP-based storage
+// MongoDB Atlas Cloud Backend Service
 // This ensures all shipments are accessible from any device worldwide
 
+import { MongoClient, Db, Collection, ObjectId } from 'mongodb';
+
 interface Shipment {
+  _id?: string;
   id: string;
   trackingNumber: string;
   status: string;
@@ -15,202 +18,325 @@ interface Shipment {
   destination: any;
   items: any[];
   trackingHistory: any[];
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-// Real cloud storage service using httpbin.org as a simple backend
-class CloudBackendService {
-  private baseUrl = 'https://httpbin.org'; // Simple HTTP service for testing
-  private storageKey = 'goexpress_shipments';
-  private isOnline = true;
+// MongoDB Atlas configuration
+const MONGODB_URI = 'mongodb+srv://dagrind2nd:AzVLAWgtxtM9rq7Q@clustertrapo.jachvjy.mongodb.net/?retryWrites=true&w=majority&appName=ClusterTrapo';
+const DATABASE_NAME = 'Trapo101';
+const COLLECTION_NAME = 'God man';
 
-  // Use a simple in-memory cloud simulation that persists across sessions
-  private cloudData: Shipment[] = [];
-  private initialized = false;
+class MongoDBCloudService {
+  private client: MongoClient | null = null;
+  private db: Db | null = null;
+  private collection: Collection<Shipment> | null = null;
+  private isConnected = false;
+  private connectionPromise: Promise<void> | null = null;
 
   constructor() {
-    this.initializeCloudStorage();
+    this.initializeConnection();
   }
 
-  private async initializeCloudStorage() {
-    if (this.initialized) return;
-    
-    try {
-      console.log('Initializing real cloud storage...');
-      
-      // Try to fetch existing data from cloud
-      const response = await fetch(`${this.baseUrl}/get`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (response.ok) {
-        console.log('Cloud storage connected successfully');
-        this.isOnline = true;
-      } else {
-        console.log('Cloud storage not available, using fallback');
-        this.isOnline = false;
-      }
-    } catch (error) {
-      console.log('Cloud storage initialization failed, using fallback');
-      this.isOnline = false;
+  private async initializeConnection(): Promise<void> {
+    if (this.connectionPromise) {
+      return this.connectionPromise;
     }
 
-    this.initialized = true;
+    this.connectionPromise = this.connect();
+    return this.connectionPromise;
+  }
+
+  private async connect(): Promise<void> {
+    try {
+      console.log('🔄 Connecting to MongoDB Atlas...');
+      
+      this.client = new MongoClient(MONGODB_URI, {
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      });
+
+      await this.client.connect();
+      this.db = this.client.db(DATABASE_NAME);
+      this.collection = this.db.collection(COLLECTION_NAME);
+      this.isConnected = true;
+
+      console.log('✅ Successfully connected to MongoDB Atlas');
+      console.log(`📊 Database: ${DATABASE_NAME}`);
+      console.log(`📦 Collection: ${COLLECTION_NAME}`);
+
+      // Create indexes for better performance
+      await this.createIndexes();
+      
+    } catch (error) {
+      console.error('❌ Failed to connect to MongoDB Atlas:', error);
+      this.isConnected = false;
+      throw error;
+    }
+  }
+
+  private async createIndexes(): Promise<void> {
+    if (!this.collection) return;
+
+    try {
+      // Create index on trackingNumber for fast lookups
+      await this.collection.createIndex({ trackingNumber: 1 }, { unique: true });
+      // Create index on id for fast lookups
+      await this.collection.createIndex({ id: 1 }, { unique: true });
+      // Create index on status for filtering
+      await this.collection.createIndex({ status: 1 });
+      // Create index on createdAt for sorting
+      await this.collection.createIndex({ createdAt: -1 });
+      
+      console.log('📊 MongoDB indexes created successfully');
+    } catch (error) {
+      console.warn('⚠️ Index creation warning:', error);
+    }
+  }
+
+  private async ensureConnection(): Promise<void> {
+    if (!this.isConnected || !this.collection) {
+      await this.initializeConnection();
+    }
   }
 
   async getAllShipments(): Promise<Shipment[]> {
     try {
-      console.log('CloudBackendService: Fetching shipments from cloud storage...');
+      await this.ensureConnection();
+      console.log('🔍 Fetching all shipments from MongoDB Atlas...');
       
-      // Simulate cloud fetch with network delay
-      await new Promise(resolve => setTimeout(resolve, 200));
+      const shipments = await this.collection!
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+
+      console.log(`📦 Retrieved ${shipments.length} shipments from MongoDB Atlas`);
       
-      // Return the in-memory cloud data
-      console.log('CloudBackendService: Retrieved', this.cloudData.length, 'shipments from cloud');
-      return [...this.cloudData];
+      // Convert MongoDB _id to string id for frontend compatibility
+      return shipments.map(shipment => ({
+        ...shipment,
+        id: shipment.id || shipment._id?.toString(),
+        _id: undefined
+      }));
+      
     } catch (error) {
-      console.error('Failed to fetch shipments from cloud:', error);
-      throw error;
+      console.error('❌ Error fetching shipments from MongoDB:', error);
+      throw new Error('Failed to fetch shipments from cloud database');
     }
   }
 
   async getShipmentByTrackingNumber(trackingNumber: string): Promise<Shipment | null> {
     try {
-      console.log('CloudBackendService: Looking for shipment:', trackingNumber);
-      const shipments = await this.getAllShipments();
-      const shipment = shipments.find(s => s.trackingNumber === trackingNumber);
-      console.log('CloudBackendService: Found shipment for', trackingNumber, ':', !!shipment);
-      return shipment || null;
+      await this.ensureConnection();
+      console.log(`🔍 Looking for shipment with tracking number: ${trackingNumber}`);
+      
+      const shipment = await this.collection!.findOne({ trackingNumber });
+      
+      if (shipment) {
+        console.log(`✅ Found shipment: ${trackingNumber}`);
+        return {
+          ...shipment,
+          id: shipment.id || shipment._id?.toString(),
+          _id: undefined
+        };
+      }
+      
+      console.log(`❌ No shipment found with tracking number: ${trackingNumber}`);
+      return null;
+      
     } catch (error) {
-      console.error('Failed to fetch shipment:', error);
+      console.error('❌ Error fetching shipment by tracking number:', error);
       return null;
     }
   }
 
   async getShipmentById(id: string): Promise<Shipment | null> {
     try {
-      const shipments = await this.getAllShipments();
-      const shipment = shipments.find(s => s.id === id);
-      return shipment || null;
+      await this.ensureConnection();
+      console.log(`🔍 Looking for shipment with ID: ${id}`);
+      
+      // Try to find by custom id first, then by MongoDB _id
+      let shipment = await this.collection!.findOne({ id });
+      
+      if (!shipment && ObjectId.isValid(id)) {
+        shipment = await this.collection!.findOne({ _id: new ObjectId(id) });
+      }
+      
+      if (shipment) {
+        console.log(`✅ Found shipment: ${id}`);
+        return {
+          ...shipment,
+          id: shipment.id || shipment._id?.toString(),
+          _id: undefined
+        };
+      }
+      
+      console.log(`❌ No shipment found with ID: ${id}`);
+      return null;
+      
     } catch (error) {
-      console.error('Failed to fetch shipment by ID:', error);
+      console.error('❌ Error fetching shipment by ID:', error);
       return null;
     }
   }
 
-  async createShipment(shipment: Omit<Shipment, 'id'>): Promise<Shipment> {
+  async createShipment(shipment: Omit<Shipment, 'id' | '_id'>): Promise<Shipment> {
     try {
+      await this.ensureConnection();
+      console.log(`📝 Creating new shipment: ${shipment.trackingNumber}`);
+      
       const newShipment: Shipment = {
         ...shipment,
-        id: this.generateId()
+        id: this.generateId(),
+        createdAt: new Date(),
+        updatedAt: new Date()
       };
 
-      // Add to cloud data
-      this.cloudData.push(newShipment);
+      const result = await this.collection!.insertOne(newShipment);
       
-      // Simulate cloud save
-      await this.saveToCloud();
+      if (result.acknowledged) {
+        console.log(`✅ Successfully created shipment: ${shipment.trackingNumber}`);
+        
+        // Broadcast change for real-time updates
+        this.broadcastChange('shipment_created', newShipment);
+        
+        return {
+          ...newShipment,
+          _id: undefined
+        };
+      } else {
+        throw new Error('Failed to create shipment in database');
+      }
       
-      console.log('CloudBackendService: Created shipment:', newShipment.trackingNumber);
-      
-      return newShipment;
     } catch (error) {
-      console.error('Failed to create shipment:', error);
-      throw error;
+      console.error('❌ Error creating shipment:', error);
+      if (error.code === 11000) {
+        throw new Error('Shipment with this tracking number already exists');
+      }
+      throw new Error('Failed to create shipment in cloud database');
     }
   }
 
   async updateShipment(id: string, updates: Partial<Shipment>): Promise<Shipment> {
     try {
-      const index = this.cloudData.findIndex(s => s.id === id);
+      await this.ensureConnection();
+      console.log(`📝 Updating shipment: ${id}`);
       
-      if (index === -1) {
+      const updateData = {
+        ...updates,
+        updatedAt: new Date(),
+        _id: undefined // Remove _id from updates
+      };
+
+      // Try to update by custom id first, then by MongoDB _id
+      let result = await this.collection!.updateOne(
+        { id },
+        { $set: updateData }
+      );
+
+      if (result.matchedCount === 0 && ObjectId.isValid(id)) {
+        result = await this.collection!.updateOne(
+          { _id: new ObjectId(id) },
+          { $set: updateData }
+        );
+      }
+
+      if (result.matchedCount === 0) {
         throw new Error('Shipment not found');
       }
 
-      const updatedShipment = { ...this.cloudData[index], ...updates, id };
-      this.cloudData[index] = updatedShipment;
+      console.log(`✅ Successfully updated shipment: ${id}`);
       
-      // Simulate cloud save
-      await this.saveToCloud();
+      // Get the updated shipment
+      const updatedShipment = await this.getShipmentById(id);
       
-      console.log('CloudBackendService: Updated shipment:', updatedShipment.trackingNumber);
+      if (updatedShipment) {
+        // Broadcast change for real-time updates
+        this.broadcastChange('shipment_updated', updatedShipment);
+        return updatedShipment;
+      } else {
+        throw new Error('Failed to retrieve updated shipment');
+      }
       
-      return updatedShipment;
     } catch (error) {
-      console.error('Failed to update shipment:', error);
-      throw error;
+      console.error('❌ Error updating shipment:', error);
+      throw new Error('Failed to update shipment in cloud database');
     }
   }
 
   async deleteShipment(id: string): Promise<void> {
     try {
-      this.cloudData = this.cloudData.filter(s => s.id !== id);
+      await this.ensureConnection();
+      console.log(`🗑️ Deleting shipment: ${id}`);
       
-      // Simulate cloud save
-      await this.saveToCloud();
+      // Try to delete by custom id first, then by MongoDB _id
+      let result = await this.collection!.deleteOne({ id });
+
+      if (result.deletedCount === 0 && ObjectId.isValid(id)) {
+        result = await this.collection!.deleteOne({ _id: new ObjectId(id) });
+      }
+
+      if (result.deletedCount === 0) {
+        throw new Error('Shipment not found');
+      }
+
+      console.log(`✅ Successfully deleted shipment: ${id}`);
       
-      console.log('CloudBackendService: Deleted shipment:', id);
+      // Broadcast change for real-time updates
+      this.broadcastChange('shipment_deleted', { id });
+      
     } catch (error) {
-      console.error('Failed to delete shipment:', error);
-      throw error;
+      console.error('❌ Error deleting shipment:', error);
+      throw new Error('Failed to delete shipment from cloud database');
     }
   }
 
   async addTrackingEvent(id: string, event: any): Promise<void> {
     try {
-      const shipment = this.cloudData.find(s => s.id === id);
-      if (!shipment) {
+      await this.ensureConnection();
+      console.log(`📍 Adding tracking event to shipment: ${id}`);
+      
+      const trackingEvent = {
+        ...event,
+        timestamp: event.timestamp || new Date().toISOString(),
+        id: this.generateId()
+      };
+
+      // Try to update by custom id first, then by MongoDB _id
+      let result = await this.collection!.updateOne(
+        { id },
+        { 
+          $push: { trackingHistory: { $each: [trackingEvent], $position: 0 } },
+          $set: { updatedAt: new Date() }
+        }
+      );
+
+      if (result.matchedCount === 0 && ObjectId.isValid(id)) {
+        result = await this.collection!.updateOne(
+          { _id: new ObjectId(id) },
+          { 
+            $push: { trackingHistory: { $each: [trackingEvent], $position: 0 } },
+            $set: { updatedAt: new Date() }
+          }
+        );
+      }
+
+      if (result.matchedCount === 0) {
         throw new Error('Shipment not found');
       }
 
-      const updatedHistory = [event, ...shipment.trackingHistory];
-      shipment.trackingHistory = updatedHistory;
+      console.log(`✅ Successfully added tracking event to shipment: ${id}`);
       
-      // Simulate cloud save
-      await this.saveToCloud();
-      
-      console.log('CloudBackendService: Added tracking event to:', shipment.trackingNumber);
-    } catch (error) {
-      console.error('Failed to add tracking event:', error);
-      throw error;
-    }
-  }
-
-  private async saveToCloud(): Promise<void> {
-    try {
-      console.log('CloudBackendService: Saving', this.cloudData.length, 'shipments to cloud storage...');
-      
-      // Simulate network delay for cloud save
-      await new Promise(resolve => setTimeout(resolve, 300));
-      
-      // Simulate cloud storage by posting to httpbin (this won't actually persist)
-      if (this.isOnline) {
-        try {
-          await fetch(`${this.baseUrl}/post`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              key: this.storageKey,
-              data: this.cloudData
-            })
-          });
-        } catch (error) {
-          console.log('Cloud save simulation completed (httpbin not persistent)');
-        }
+      // Get updated shipment and broadcast change
+      const updatedShipment = await this.getShipmentById(id);
+      if (updatedShipment) {
+        this.broadcastChange('tracking_updated', updatedShipment);
       }
       
-      console.log('CloudBackendService: Successfully saved shipments to cloud storage');
-      
-      // Broadcast change to other tabs/windows for real-time sync
-      window.dispatchEvent(new CustomEvent('shipmentsUpdated', { detail: this.cloudData }));
     } catch (error) {
-      console.error('Failed to save shipments to cloud storage:', error);
-      throw error;
+      console.error('❌ Error adding tracking event:', error);
+      throw new Error('Failed to add tracking event to cloud database');
     }
   }
 
@@ -218,55 +344,68 @@ class CloudBackendService {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
-  // Initialize with demo data if empty - this runs once globally
+  private broadcastChange(type: string, data: any): void {
+    // Broadcast changes to all open tabs/windows for real-time sync
+    window.dispatchEvent(new CustomEvent('shipmentsUpdated', { 
+      detail: { type, data } 
+    }));
+  }
+
+  // Initialize with demo data if collection is empty
   async initializeWithDemoData(): Promise<void> {
     try {
-      console.log('CloudBackendService: Checking if cloud storage initialization needed...');
-      const existingShipments = await this.getAllShipments();
+      await this.ensureConnection();
+      console.log('🔍 Checking if MongoDB collection needs initialization...');
       
-      if (existingShipments.length === 0) {
-        console.log('CloudBackendService: Initializing cloud storage with global demo data...');
+      const count = await this.collection!.countDocuments();
+      
+      if (count === 0) {
+        console.log('📦 Initializing MongoDB with demo shipments...');
         
         // Import demo data
         const { default: demoShipments } = await import('../data/globalShipments');
-        this.cloudData = [...demoShipments];
         
-        // Save to cloud
-        await this.saveToCloud();
+        // Add metadata to demo shipments
+        const shipmentsWithMetadata = demoShipments.map(shipment => ({
+          ...shipment,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }));
         
-        console.log('CloudBackendService: Global demo data initialized in cloud storage');
+        await this.collection!.insertMany(shipmentsWithMetadata);
+        
+        console.log(`✅ Successfully initialized MongoDB with ${demoShipments.length} demo shipments`);
       } else {
-        console.log('CloudBackendService: Found', existingShipments.length, 'existing shipments in cloud storage');
+        console.log(`📊 MongoDB collection already has ${count} shipments`);
       }
+      
     } catch (error) {
-      console.error('Failed to initialize demo data:', error);
-      // Initialize with demo data as fallback
-      try {
-        const { default: demoShipments } = await import('../data/globalShipments');
-        this.cloudData = [...demoShipments];
-        console.log('CloudBackendService: Initialized with demo data as fallback');
-      } catch (fallbackError) {
-        console.error('Failed to initialize even demo data:', fallbackError);
-      }
+      console.error('❌ Failed to initialize demo data:', error);
+      throw error;
     }
   }
 
-  // Health check method to verify cloud storage connectivity
+  // Health check method
   async healthCheck(): Promise<boolean> {
     try {
-      // Simulate health check
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return this.isOnline;
-    } catch {
+      await this.ensureConnection();
+      await this.db!.admin().ping();
+      return true;
+    } catch (error) {
+      console.error('❌ MongoDB health check failed:', error);
       return false;
     }
   }
 
   // Cleanup method
-  destroy(): void {
-    // No cleanup needed for this implementation
+  async disconnect(): Promise<void> {
+    if (this.client) {
+      await this.client.close();
+      this.isConnected = false;
+      console.log('🔌 Disconnected from MongoDB Atlas');
+    }
   }
 }
 
-export const cloudBackend = new CloudBackendService();
+export const cloudBackend = new MongoDBCloudService();
 export default cloudBackend;

@@ -24,16 +24,10 @@ interface ThemeProviderProps {
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   // Get initial theme preference from localStorage or system preference
   const getInitialTheme = (): ThemeType => {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const storedPreference = window.localStorage.getItem('theme');
-      if (storedPreference) {
-        return storedPreference as ThemeType;
-      }
-
-      const userMedia = window.matchMedia('(prefers-color-scheme: dark)');
-      if (userMedia.matches) {
-        return 'dark';
-      }
+    // Use system preference
+    const userMedia = window.matchMedia('(prefers-color-scheme: dark)');
+    if (userMedia.matches) {
+      return 'dark';
     }
 
     return 'light'; // Default theme
@@ -50,8 +44,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     } else {
       root.classList.remove('dark');
     }
-    
-    localStorage.setItem('theme', theme);
+    // Note: Theme preference is session-based only
   }, [theme]);
 
   const toggleTheme = () => {
