@@ -31,29 +31,29 @@ export const ShipmentProvider: React.FC<ShipmentProviderProps> = ({ children }) 
   const [isLoading, setIsLoading] = useState(false);
   
   useEffect(() => {
-    // Initialize MongoDB Atlas backend with demo data if needed
-    const initializeMongoDBBackend = async () => {
+    // Initialize cloud backend with demo data if needed
+    const initializeCloudBackend = async () => {
       try {
-        console.log('🚀 Initializing MongoDB Atlas backend...');
+        console.log('🚀 Initializing cloud backend...');
         await cloudBackend.initializeWithDemoData();
         
-        // Verify MongoDB connectivity
+        // Verify cloud connectivity
         const isHealthy = await cloudBackend.healthCheck();
         if (isHealthy) {
-          console.log('✅ MongoDB Atlas backend is healthy and ready');
+          console.log('✅ Cloud backend is healthy and ready');
         } else {
-          console.warn('⚠️ MongoDB Atlas connectivity issues detected');
+          console.warn('⚠️ Cloud connectivity issues detected');
         }
       } catch (error) {
-        console.error('❌ Failed to initialize MongoDB Atlas backend:', error);
+        console.error('❌ Failed to initialize cloud backend:', error);
       }
     };
     
-    initializeMongoDBBackend();
+    initializeCloudBackend();
     
-    // Listen for real-time shipment updates from MongoDB
+    // Listen for real-time shipment updates from cloud
     const handleShipmentsUpdated = (event: CustomEvent) => {
-      console.log('📡 MongoDB shipments updated - refreshing data');
+      console.log('📡 Cloud shipments updated - refreshing data');
       // You could trigger a refresh here if needed
     };
     
@@ -61,7 +61,7 @@ export const ShipmentProvider: React.FC<ShipmentProviderProps> = ({ children }) 
     
     return () => {
       window.removeEventListener('shipmentsUpdated', handleShipmentsUpdated as EventListener);
-      // Cleanup MongoDB connection on unmount
+      // Cleanup cloud connection on unmount
       cloudBackend.disconnect().catch(console.error);
     };
   }, []);
